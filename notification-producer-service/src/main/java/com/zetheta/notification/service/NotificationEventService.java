@@ -11,20 +11,21 @@ import com.zetheta.notification.repository.NotificationEventRepository;
 @Service
 public class NotificationEventService {
 
-    private final
-    NotificationEventRepository repository;
+    private final NotificationEventRepository repository;
+    private final KafkaProducerService kafkaProducerService;
 
     public NotificationEventService(
-            NotificationEventRepository repository) {
+            NotificationEventRepository repository,
+            KafkaProducerService kafkaProducerService) {
 
         this.repository = repository;
+        this.kafkaProducerService = kafkaProducerService;
     }
 
     public NotificationEvent createEvent(
             NotificationEventRequest request) {
 
-        NotificationEvent event =
-                new NotificationEvent();
+        NotificationEvent event = new NotificationEvent();
 
         event.setEventId(
                 UUID.randomUUID().toString());
@@ -41,6 +42,12 @@ public class NotificationEventService {
         event.setStatus(
                 "RECEIVED");
 
-        return repository.save(event);
+        NotificationEvent savedEvent =
+                repository.save(event);
+
+        kafkaProducerService.publishEvent(
+                savedEvent.getEventId());
+
+        return savedEvent;
     }
 }
