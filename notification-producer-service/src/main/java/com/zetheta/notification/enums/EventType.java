@@ -1,0 +1,28 @@
+package com.zetheta.notification.enums;
+
+public enum EventType {
+
+    TRANSACTION_SUCCESS,
+
+    TRANSACTION_FAILED,
+
+    SIP_REMINDER,
+
+    SIP_FAILED,
+
+    MARGIN_CALL,
+
+    PRICE_ALERT,
+
+    DIVIDEND_CREDIT,
+
+    KYC_EXPIRY,
+
+    REGULATORY_NOTICE,
+
+    PASSWORD_CHANGED,
+
+    LOGIN_ALERT,
+
+    WELCOME_NOTIFICATION
+}
