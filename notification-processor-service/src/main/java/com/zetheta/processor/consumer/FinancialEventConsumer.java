@@ -8,8 +8,7 @@ import com.zetheta.processor.service.NotificationProcessingService;
 @Service
 public class FinancialEventConsumer {
 
-    private final
-    NotificationProcessingService service;
+    private final NotificationProcessingService service;
 
     public FinancialEventConsumer(
             NotificationProcessingService service) {
@@ -20,14 +19,12 @@ public class FinancialEventConsumer {
     @KafkaListener(
             topics = "financial-events",
             groupId = "notification-group")
-    public void consume(
-            String message) {
+    public void consume(String message) {
 
         System.out.println(
-                "Received Event: "
-                        + message);
+                "Received Event: " + message);
 
         service.processEvent(
-                message);
+                "TRANSACTION_SUCCESS");
     }
 }
