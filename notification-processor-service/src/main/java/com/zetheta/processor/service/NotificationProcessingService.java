@@ -16,21 +16,44 @@ public class NotificationProcessingService {
 
         private final DndComplianceService dndService;
 
+        private final FrequencyCappingService frequencyCappingService;
+
         public NotificationProcessingService(
                         ChannelRoutingService routingService,
                         TemplateEngineService templateService,
-                        DndComplianceService dndService) {
+                        DndComplianceService dndService,
+                        FrequencyCappingService frequencyCappingService) {
 
                 this.routingService = routingService;
                 this.templateService = templateService;
                 this.dndService = dndService;
+                this.frequencyCappingService = frequencyCappingService;
         }
 
-        public void processEvent(
-                        String eventType) {
+        public void processEvent(String eventType) {
+
+                String userId = "USR1001";
+
+                // DND CHECK
+
+                boolean allowedByDnd = dndService.canSendNotification(
+                                userId,
+                                "TRANSACTIONAL");
+
+                if (!allowedByDnd) {
+
+                        System.out.println(
+                                        "Blocked By DND");
+
+                        return;
+                }
+
+                // CHANNEL ROUTING
 
                 List<NotificationChannel> channels = routingService.getChannels(
                                 eventType);
+
+                // TEMPLATE DATA
 
                 NotificationTemplateData data = new NotificationTemplateData();
 
@@ -47,10 +70,31 @@ public class NotificationProcessingService {
                                 .generateTransactionTemplate(
                                                 data);
 
-                System.out.println(
-                                "Channels: " + channels);
+                // PROCESS EACH CHANNEL
 
-                System.out.println(
-                                content);
+                for (NotificationChannel channel : channels) {
+
+                        boolean allowedByCap = frequencyCappingService.canSend(
+                                        userId,
+                                        channel.name());
+
+                        if (!allowedByCap) {
+
+                                System.out.println(
+                                                "Blocked By Frequency Cap : "
+                                                                + channel);
+
+                                continue;
+                        }
+
+                        System.out.println(
+                                        "Sending via : "
+                                                        + channel);
+
+                        System.out.println(content);
+
+                        System.out.println(
+                                        "================================");
+                }
         }
 }
