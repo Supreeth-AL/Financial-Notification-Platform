@@ -10,48 +10,47 @@ import com.zetheta.processor.enums.NotificationChannel;
 @Service
 public class NotificationProcessingService {
 
-    private final
-    ChannelRoutingService routingService;
+        private final ChannelRoutingService routingService;
 
-    private final
-    TemplateEngineService templateService;
+        private final TemplateEngineService templateService;
 
-    public NotificationProcessingService(
-            ChannelRoutingService routingService,
-            TemplateEngineService templateService) {
+        private final DndComplianceService dndService;
 
-        this.routingService = routingService;
-        this.templateService = templateService;
-    }
+        public NotificationProcessingService(
+                        ChannelRoutingService routingService,
+                        TemplateEngineService templateService,
+                        DndComplianceService dndService) {
 
-    public void processEvent(
-            String eventType) {
+                this.routingService = routingService;
+                this.templateService = templateService;
+                this.dndService = dndService;
+        }
 
-        List<NotificationChannel> channels =
-                routingService.getChannels(
-                        eventType);
+        public void processEvent(
+                        String eventType) {
 
-        NotificationTemplateData data =
-                new NotificationTemplateData();
+                List<NotificationChannel> channels = routingService.getChannels(
+                                eventType);
 
-        data.setCustomerName(
-                "Supreeth");
+                NotificationTemplateData data = new NotificationTemplateData();
 
-        data.setAmount(
-                "5000");
+                data.setCustomerName(
+                                "Supreeth");
 
-        data.setTransactionId(
-                "TXN1001");
+                data.setAmount(
+                                "5000");
 
-        String content =
-                templateService
-                        .generateTransactionTemplate(
-                                data);
+                data.setTransactionId(
+                                "TXN1001");
 
-        System.out.println(
-                "Channels: " + channels);
+                String content = templateService
+                                .generateTransactionTemplate(
+                                                data);
 
-        System.out.println(
-                content);
-    }
+                System.out.println(
+                                "Channels: " + channels);
+
+                System.out.println(
+                                content);
+        }
 }
