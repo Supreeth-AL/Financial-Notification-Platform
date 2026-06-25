@@ -15,19 +15,22 @@ public class NotificationProcessingService {
     private final DndComplianceService dndService;
     private final FrequencyCappingService frequencyCappingService;
     private final QuietHoursService quietHoursService;
+    private final EmailNotificationService emailService;
 
     public NotificationProcessingService(
             ChannelRoutingService routingService,
             TemplateEngineService templateService,
             DndComplianceService dndService,
             FrequencyCappingService frequencyCappingService,
-            QuietHoursService quietHoursService) {
+            QuietHoursService quietHoursService,
+            EmailNotificationService emailService) {
 
         this.routingService = routingService;
         this.templateService = templateService;
         this.dndService = dndService;
         this.frequencyCappingService = frequencyCappingService;
         this.quietHoursService = quietHoursService;
+        this.emailService = emailService;
     }
 
     public void processEvent(String eventType) {
@@ -47,6 +50,7 @@ public class NotificationProcessingService {
                         "TRANSACTIONAL");
 
         if (!dndAllowed) {
+
             System.out.println("Blocked By DND");
             return;
         }
@@ -58,6 +62,7 @@ public class NotificationProcessingService {
                         "EMAIL");
 
         if (!frequencyAllowed) {
+
             System.out.println("Blocked By Frequency Cap");
             return;
         }
@@ -69,11 +74,12 @@ public class NotificationProcessingService {
                         eventType);
 
         if (!quietHoursAllowed) {
+
             System.out.println("Blocked By Quiet Hours");
             return;
         }
 
-        // Step 5 - Generate Notification
+        // Step 5 - Generate Template
         NotificationTemplateData data =
                 new NotificationTemplateData();
 
@@ -86,6 +92,14 @@ public class NotificationProcessingService {
 
         System.out.println("\nNotification Content:\n");
         System.out.println(content);
+
+        // Step 6 - Send Email
+        emailService.sendEmail(
+                "supreethal.dev@gmail.com",
+                "Transaction Successful",
+                content);
+
+        System.out.println("\nEmail Sent Successfully");
 
         System.out.println("\nNotification Ready For Delivery");
     }
