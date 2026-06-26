@@ -1,4 +1,4 @@
-package com.zetheta.processor.repository;
+package com.zetheta.processor.service;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

@@ -18,16 +18,7 @@ public class EmailNotificationService {
             String subject,
             String body) {
 
-        SimpleMailMessage message =
-                new SimpleMailMessage();
-
-        message.setTo(to);
-        message.setSubject(subject);
-        message.setText(body);
-
-        mailSender.send(message);
-
-        System.out.println(
-                "Email Sent Successfully");
+        throw new RuntimeException(
+                "SMTP Server Down");
     }
 }

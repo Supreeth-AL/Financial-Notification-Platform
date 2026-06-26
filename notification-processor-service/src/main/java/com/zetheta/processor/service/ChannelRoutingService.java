@@ -37,6 +37,9 @@ public class ChannelRoutingService {
                         NotificationChannel.SMS);
 
                 channels.add(
+                        NotificationChannel.WHATSAPP);
+
+                channels.add(
                         NotificationChannel.PUSH);
 
                 break;
@@ -50,6 +53,8 @@ public class ChannelRoutingService {
                         NotificationChannel.IN_APP);
 
                 break;
+
+                
 
             default:
 

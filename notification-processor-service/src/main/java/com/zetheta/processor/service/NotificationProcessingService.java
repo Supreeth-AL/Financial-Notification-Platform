@@ -5,25 +5,58 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.zetheta.processor.dto.NotificationTemplateData;
+import com.zetheta.processor.entity.NotificationRecord;
 import com.zetheta.processor.enums.NotificationChannel;
+import com.zetheta.processor.repository.NotificationRecordRepository;
 
 @Service
 public class NotificationProcessingService {
 
     private final ChannelRoutingService routingService;
+
     private final TemplateEngineService templateService;
+
     private final DndComplianceService dndService;
+
     private final FrequencyCappingService frequencyCappingService;
+
     private final QuietHoursService quietHoursService;
+
     private final EmailNotificationService emailService;
 
+    private final SmsNotificationService smsService;
+
+    private final WhatsAppNotificationService whatsappService;
+
+    private final PushNotificationService pushNotificationService;
+
+    private final InAppNotificationService inAppNotificationService;
+
+    private final NotificationRecordRepository notificationRecordRepository;
+
     public NotificationProcessingService(
+
             ChannelRoutingService routingService,
+
             TemplateEngineService templateService,
+
             DndComplianceService dndService,
+
             FrequencyCappingService frequencyCappingService,
+
             QuietHoursService quietHoursService,
-            EmailNotificationService emailService) {
+
+            EmailNotificationService emailService,
+
+            SmsNotificationService smsService,
+
+            WhatsAppNotificationService whatsappService,
+
+            PushNotificationService pushNotificationService,
+
+            InAppNotificationService inAppNotificationService,
+
+            NotificationRecordRepository notificationRecordRepository) {
 
         this.routingService = routingService;
         this.templateService = templateService;
@@ -31,76 +64,213 @@ public class NotificationProcessingService {
         this.frequencyCappingService = frequencyCappingService;
         this.quietHoursService = quietHoursService;
         this.emailService = emailService;
+        this.smsService = smsService;
+        this.whatsappService = whatsappService;
+        this.pushNotificationService = pushNotificationService;
+        this.inAppNotificationService = inAppNotificationService;
+        this.notificationRecordRepository = notificationRecordRepository;
     }
 
     public void processEvent(String eventType) {
 
         String userId = "USR1001";
 
-        // Step 1 - Route Notification
+        //-----------------------------------------
+        // DND CHECK
+        //-----------------------------------------
+
+        if (!dndService.canSendNotification(userId,
+                "TRANSACTIONAL")) {
+
+            System.out.println(
+                    "Notification Blocked By DND");
+
+            return;
+        }
+
+        //-----------------------------------------
+        // QUIET HOURS
+        //-----------------------------------------
+
+        if (!quietHoursService.canSendNotification(
+                userId,
+                eventType)) {
+
+            System.out.println(
+                    "Notification Blocked During Quiet Hours");
+
+            return;
+        }
+
+        //-----------------------------------------
+        // CHANNEL ROUTING
+        //-----------------------------------------
+
         List<NotificationChannel> channels =
                 routingService.getChannels(eventType);
 
-        System.out.println("Selected Channels: " + channels);
+        //-----------------------------------------
+        // TEMPLATE
+        //-----------------------------------------
 
-        // Step 2 - DND Check
-        boolean dndAllowed =
-                dndService.canSendNotification(
-                        userId,
-                        "TRANSACTIONAL");
-
-        if (!dndAllowed) {
-
-            System.out.println("Blocked By DND");
-            return;
-        }
-
-        // Step 3 - Frequency Cap Check
-        boolean frequencyAllowed =
-                frequencyCappingService.canSend(
-                        userId,
-                        "EMAIL");
-
-        if (!frequencyAllowed) {
-
-            System.out.println("Blocked By Frequency Cap");
-            return;
-        }
-
-        // Step 4 - Quiet Hours Check
-        boolean quietHoursAllowed =
-                quietHoursService.canSendNotification(
-                        userId,
-                        eventType);
-
-        if (!quietHoursAllowed) {
-
-            System.out.println("Blocked By Quiet Hours");
-            return;
-        }
-
-        // Step 5 - Generate Template
         NotificationTemplateData data =
                 new NotificationTemplateData();
 
         data.setCustomerName("Supreeth");
         data.setAmount("5000");
-        data.setTransactionId("TXN1001");
+        data.setTransactionId("TXN10001");
 
         String content =
-                templateService.generateTransactionTemplate(data);
+                templateService
+                        .generateTransactionTemplate(data);
 
-        System.out.println("\nNotification Content:\n");
-        System.out.println(content);
+        //-----------------------------------------
+        // SEND TO EACH CHANNEL
+        //-----------------------------------------
 
-        // Step 6 - Send Email
-        emailService.sendEmail(
-                "supreethal.dev@gmail.com",
-                "Transaction Successful",
-                content);
+        for (NotificationChannel channel : channels) {
 
-        System.out.println("\nEmail Sent Successfully");
+            //-----------------------------------------
+            // FREQUENCY CAPPING
+            //-----------------------------------------
 
-        System.out.println("\nNotification Ready For Delivery");
+            boolean allowed =
+                    frequencyCappingService.canSend(
+                            userId,
+                            channel.name());
+
+            if (!allowed) {
+
+                System.out.println(
+                        "Blocked By Frequency Cap : "
+                                + channel);
+
+                continue;
+            }
+
+            //-----------------------------------------
+            // CREATE DELIVERY RECORD
+            //-----------------------------------------
+
+            NotificationRecord record =
+                    new NotificationRecord();
+
+            record.setEventId(
+                    "EVT-" + System.currentTimeMillis());
+
+            record.setChannel(channel.name());
+
+            record.setMessage(content);
+
+            record.setStatus("PROCESSING");
+
+            notificationRecordRepository.save(record);
+
+            //-----------------------------------------
+            // SEND NOTIFICATION
+            //-----------------------------------------
+
+            try {
+
+                switch (channel) {
+
+                    case EMAIL:
+
+                        emailService.sendEmail(
+
+                                "your-email@gmail.com",
+
+                                "Transaction Successful",
+
+                                content);
+
+                        break;
+
+                    case SMS:
+
+                        smsService.sendSms(
+
+                                "+91XXXXXXXXXX",
+
+                                content);
+
+                        break;
+
+                    case WHATSAPP:
+
+                        whatsappService.sendMessage(
+
+                                "+91XXXXXXXXXX",
+
+                                content);
+
+                        break;
+
+                    case PUSH:
+
+                        pushNotificationService
+                                .sendNotification(
+
+                                        "DEVICE_TOKEN",
+
+                                        "Transaction Successful",
+
+                                        content);
+
+                        break;
+
+                    case IN_APP:
+
+                        inAppNotificationService
+                                .createNotification(
+
+                                        userId,
+
+                                        "Transaction Successful",
+
+                                        content);
+
+                        break;
+
+                    default:
+
+                        break;
+                }
+
+                //-----------------------------------------
+                // SUCCESS
+                //-----------------------------------------
+
+                record.setStatus("DELIVERED");
+
+                notificationRecordRepository.save(record);
+
+                System.out.println(
+
+                        channel + " Delivered Successfully");
+
+            } catch (Exception exception) {
+
+                //-----------------------------------------
+                // FAILURE
+                //-----------------------------------------
+
+                record.setStatus("FAILED");
+
+                record.setFailureReason(
+
+                        exception.getMessage());
+
+                notificationRecordRepository.save(record);
+
+                System.out.println(
+
+                        channel + " Delivery Failed");
+
+                System.out.println(
+
+                        exception.getMessage());
+            }
+        }
     }
 }
